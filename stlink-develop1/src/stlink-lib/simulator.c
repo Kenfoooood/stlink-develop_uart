@@ -1,5 +1,11 @@
+#include <stdint.h>
+#include "simulator.h"
+#include "commands.h"
+#include "stlink.h"
+
 #define FLASH_MEM 288*1024
 #define RAM_MEM 8*1024
+
 
 uint8_t flash_memory[FLASH_MEM];
 uint8_t ram[RAM_MEM];
@@ -72,9 +78,9 @@ MB_modbus_t MB_device;
 
 
 //-- Emulate send data to UART
-void MB_SendMsg(MB_modbus_t *const modbus) {
+void MB_sendMsg(MB_modbus_t *const modbus) {
 	
-	MB_modbus_t *const dest = (modbus == MB_host) ? &MB_device : &MB_host;
+	MB_modbus_t *const dest = (modbus == &MB_host) ? &MB_device : &MB_host;
 	
 	/* Node: calc crc16 and set modbus header (txSize + 4)*/
 	dest->rxSize = modbus->txSize + 4;
@@ -90,6 +96,7 @@ int32_t MB_msgHandler(MB_modbus_t *const modbus) {
 	//-- skip modbus header
 	uint8_t *payload = &modbus->rxBuf[2];
 	uint8_t cmd = payload[0];
+	uint8_t idx = payload[1];
 	int32_t res = 0;
 	
 	switch(cmd) {
@@ -100,10 +107,11 @@ int32_t MB_msgHandler(MB_modbus_t *const modbus) {
 			res = MB_write32(modbus);
 			break;
 		case STLINK_DEBUG_APIV2_READREG:
-			res = ;
+			//res = MB_readReg(modbus, idx);
+			res = MB_readAllRegs(modbus);
 			break;
 		case STLINK_DEBUG_APIV2_READALLREGS:
-			res = ;
+			res = MB_readAllRegs(modbus);
 			break;
 		case STLINK_DEBUG_READMEM_32BIT:
 			res = MB_read32(modbus);
@@ -147,7 +155,7 @@ int32_t MEM_writeMem(uint32_t addr, const uint8_t *data, uint16_t size) {
 	return 0;
 }
 
-int32_t MB_write32(MB_modbus *const modbus) {
+int32_t MB_write32(MB_modbus_t *const modbus) {
 	//-- skip modbus header and cmd
 	uint8_t *payload = &modbus->rxBuf[3];
 	
@@ -187,7 +195,7 @@ int32_t MB_read32(MB_modbus_t *const modbus) {
 	payload += 4;
 	
 	//-- save size (for AMP protocol)
-	modbuss->txBuf[2] = 4;
+	modbus->txBuf[2] = 4;
 	
 	//-- skip modbus header and size
 	uint8_t *recData = &modbus->txBuf[3];
@@ -196,7 +204,7 @@ int32_t MB_read32(MB_modbus_t *const modbus) {
 	return MEM_readMem(addr, recData, 4);
 }
 
-struct stlink_reg init_regs {
+struct stlink_reg init_regs = {
 	{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150},
 	{0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150,
 	0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150},
@@ -206,10 +214,16 @@ struct stlink_reg init_regs {
 	0x00000000,
 	0x00000000,
 	0,0,0,0,0
+};
+
+int32_t MB_readAllRegs(MB_modbus_t *const modbus) {
+	memcpy(modbus->txBuf, init_regs, sizeof(init_regs));
+	return 0;
 }
 
-int32_t MB_ReadAllRegs(MB_modbus_t *const modbus) {
-	memcpy(modbus->txBuf[i], init_regs, sizeof(init_regs));
+int32_t MB_readReg(MB_modbus_t *const modbus, uint8_t r_idx) {
+	memcpy(modbus->txBuf, init_regs.r[r_idx], sizeof(init_regs.r));
+	return 0;
 }
 
 

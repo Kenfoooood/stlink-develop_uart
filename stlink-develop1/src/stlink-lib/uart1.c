@@ -19,8 +19,12 @@
 #include <stlink.h>
 #include <helper.h>
 #include "uart1.h"
+//#include "simulator.h"
 
 enum SCSI_Generic_Direction {SG_DXFER_TO_DEV = 0, SG_DXFER_FROM_DEV = 0x80};
+
+MB_modbus_t MB_host;
+MB_modbus_t MB_device;
 
 static inline uint32_t le_to_h_u32(const uint8_t* buf) {
     return((uint32_t)((uint32_t)buf[0] | (uint32_t)buf[1] << 8 | (uint32_t)buf[2] << 16 | (uint32_t)buf[3] << 24));
@@ -195,7 +199,7 @@ int _stlink_uart_read_debug32(stlink_t *sl, uint32_t addr, uint32_t *data) {
     int i = 0;
     cmd[i++] = STLINK_DEBUG_APIV2_READDEBUGREG;
     write_uint32(&cmd[i], addr);
-    size = send_recv(modbus, cmd, i, rdata);
+    ssize_t size = send_recv(modbus, cmd, i, rdata);
 
     if (size < 0) {
         return(-1);
@@ -213,7 +217,7 @@ int _stlink_uart_write_debug32(stlink_t *sl, uint32_t addr, uint32_t data) {
 	unsigned char *const cmd = sl->c_buf;
 	
 	int i = 0;
-	cmd[i++] = SRLINK_DEBUG_APIV2_WRITEDEBUGREG;
+	cmd[i++] = STLINK_DEBUG_APIV2_WRITEDEBUGREG;
 	write_uint32(&cmd[i], addr);
 	write_uint32(&cmd[i + 4], data);
 	
@@ -712,7 +716,7 @@ int _stlink_uart_read_reg(stlink_t *sl, int r_idx, struct stlink_reg *regp) {
     cmd[i++] = STLINK_DEBUG_APIV2_READREG;
 
     cmd[i++] = (uint8_t)r_idx;
-    size = send_recv(modbus, cmd, i, data);
+    ssize_t size = send_recv(modbus, cmd, i, data);
     if (size < 0) {
         return(-1);
     }
