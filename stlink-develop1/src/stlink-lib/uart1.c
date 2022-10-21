@@ -100,7 +100,7 @@ int32_t send_recv(MB_modbus_t *const modbus, uint8_t *txBuf, uint16_t txSize, ui
 	
 	/* Answer will be received at modbus->rxBuf*/
 	
-	uint16_t rxSize = modbus->rxBuf[2];
+    uint16_t rxSize = modbus->rxBuf[2];
 	
 	//check error
 	if(!rxSize) {

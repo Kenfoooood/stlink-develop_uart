@@ -1,7 +1,7 @@
 #include <stdint.h>
-#include "simulator.h"
+//#include "simulator.h"
 #include "commands.h"
-#include "stlink.h"
+#include <stlink.h>
 
 #define FLASH_MEM 288*1024
 #define RAM_MEM 8*1024
@@ -10,8 +10,8 @@
 uint8_t flash_memory[FLASH_MEM];
 uint8_t ram[RAM_MEM];
 
-MB_modbus_t MB_host;
-MB_modbus_t MB_device;
+extern MB_modbus_t MB_host;
+extern MB_modbus_t MB_device;
 
 
 /*int stlink_uart_write_debug32(stlink_t *sl, uint32_t addr, uint32_t data) {
@@ -84,10 +84,15 @@ void MB_sendMsg(MB_modbus_t *const modbus) {
 	
 	/* Node: calc crc16 and set modbus header (txSize + 4)*/
 	dest->rxSize = modbus->txSize + 4;
-	memcpy(dest->rxBuf, modbus->txBuf, dest->rxSize);
 	
+	if (dest == &MB_host) {
+		memcpy(dest->rxBuf[3], modbus->txBuf[3], sizeof(modbus->txBuf - 2)/*dest->rxSize*/);
+	}
+	
+
 	//-- Emulate receive and handle data on remote device/simulator
 	if (dest == &MB_device) {
+		memcpy(dest->rxBuf, modbus->txBuf, sizeof(modbus->txBuf)/*dest->rxSize*/);
 		MB_msgHandler(dest);
 	}
 }
@@ -217,12 +222,14 @@ struct stlink_reg init_regs = {
 };
 
 int32_t MB_readAllRegs(MB_modbus_t *const modbus) {
-	memcpy(modbus->txBuf, init_regs, sizeof(init_regs));
+	modbus->txBuf[2] = sizeof(modbus->txBuf[3]);
+	memcpy(modbus->txBuf[3], init_regs, sizeof(init_regs));
 	return 0;
 }
 
 int32_t MB_readReg(MB_modbus_t *const modbus, uint8_t r_idx) {
-	memcpy(modbus->txBuf, init_regs.r[r_idx], sizeof(init_regs.r));
+	modbus->txBuf[2] = sizeof(modbus->txBuf[3]);
+	memcpy(modbus->txBuf[3], init_regs.r[r_idx], sizeof(init_regs.r));
 	return 0;
 }
 

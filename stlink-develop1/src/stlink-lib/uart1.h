@@ -11,7 +11,7 @@
 #include <stlink.h>
 //#include <libusb_settings.h>
 #include "logging.h"
-#include "simulator.h"
+//#include "simulator.h"
 
 #define STLINK_USB_VID_ST                   0x0483
 #define STLINK_USB_PID_STLINK               0x3744
