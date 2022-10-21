@@ -32,6 +32,7 @@
 #include "gdb-server.h"
 #include "semihosting.h"
 #include "uart1.h"
+//#include "simulator.h"
 
 #define FLASH_BASE 0x08000000
 
@@ -225,7 +226,7 @@ int main(int argc, char** argv) {
     parse_options(argc, argv, &state);
 
     printf("st-util %s\n", STLINK_VERSION);
-	sl = (stlink_t*)malloc(sizeof(stlink_t));
+	sl = (stlink_t*)calloc(1, sizeof(stlink_t));
 	init_emulation_connection(sl);
     //init_chipids (ETC_STLINK_DIR);
 	
